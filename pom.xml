@@ -73,6 +73,7 @@
                 <configuration>
                     <failOnViolation>true</failOnViolation>
                     <printFailingErrors>true</printFailingErrors>
+                    <outputDirectory>${project.build.directory}/reports</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
@@ -96,6 +97,8 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <xmlOutput>true</xmlOutput>
+                    <outputDirectory>${project.build.directory}/reports</outputDirectory>
                     <includeFilterFile>spotbugs-security-include.xml</includeFilterFile>
                     <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
                     <plugins>

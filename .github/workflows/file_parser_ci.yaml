@@ -17,10 +17,10 @@ jobs:
           fetch-depth: 1
 
       - name: Run spotbugs check
-        run: mvn clean spotbugs:check -Dspotbugs.report.format=xml -Dspotbugs.report.filename=target/reports/spotbugs.xml
+        run: mvn clean validate spotbugs:check -Dspotbugs.report.format=xml -Dspotbugs.report.filename=target/reports/spotbugs.xml
 
       - name: Run PMD check
-        run: mvn pmd:check -Dpmd.reportFormat=xml -Dpmd.outputFile=target/reports/pmd.xml
+        run: mvn validate pmd:check -Dpmd.reportFormat=xml -Dpmd.outputFile=target/reports/pmd.xml
 
       - name: Upload PMD report
         if: always()
