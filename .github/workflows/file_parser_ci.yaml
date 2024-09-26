@@ -8,9 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  static-analysis:
+  code-quality-check:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Run spotbugs check
         run: mvn clean spotbugs:check -Dspotbugs.report.format=xml -Dspotbugs.report.filename=target/reports/spotbugs.xml
 
@@ -34,7 +39,7 @@ jobs:
   build-and-test-parser:
     strategy:
       matrix:
-        java: [ 11, 17 ]
+        java: [ 11, 17, 21 ]
     runs-on: ubuntu-latest
 
     steps:
@@ -43,10 +48,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: set up JDK 17
+      - name: set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
           cache: maven
 
