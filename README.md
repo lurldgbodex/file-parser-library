@@ -1,4 +1,4 @@
-# file-parser-library
+# file-parser-library [![File Parser CI](https://github.com/lurldgbodex/file-parser-library/actions/workflows/file_parser_ci.yaml/badge.svg)](https://github.com/lurldgbodex/file-parser-library/actions/workflows/file_parser_ci.yaml)
 ## Overview
 
 The File Parser Library is a flexible file parsing and transformation library designed to simplify the process of reading and converting between multiple file formats, including CSV, JSON, and XML. It allows developers to parse data into Java objects (POJOs), validate data, and convert between formats seamlessly.
