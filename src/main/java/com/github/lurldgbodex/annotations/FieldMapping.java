@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface FieldMapping {
     String column();
+    Class<?> type() default String.class;
+    String format() default "";
 }

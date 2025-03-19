@@ -1,27 +1,80 @@
 package com.github.lurldgbodex.mapper;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyName;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.lurldgbodex.annotations.FieldMapping;
 import com.github.lurldgbodex.exceptions.ParserException;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
 public class Mapper {
+    private final ObjectMapper jsonMapper;
+    private final XmlMapper xmlMapper;
 
-    public <T, D> T mapToobject(D data, Class<T> clazz, BiFunction<D, String, String> valueExtractor) {
+    private static final Map<Class<?>, List<FieldInfo>> fieldCache = new ConcurrentHashMap<>();
+
+    public Mapper() {
+        this.jsonMapper = createConfiguredObjectMapper(new ObjectMapper());
+        this.xmlMapper = (XmlMapper) createConfiguredObjectMapper(new XmlMapper());
+    }
+
+
+    /**
+     * Maps a file (json or xml) to a list of objects.
+     *
+     * @param file The file to parse.
+     * @param clazz the target class.
+     * @param isXml whether the file is XML (true) or JSON (false).
+     * @return A list of mapped objects
+     * @throws ParserException if parsing fails
+     */
+    public <T> List<T> mapToObject(File file, Class<T> clazz, boolean isXml) throws ParserException {
         try {
-            T obj = clazz.getDeclaredConstructor().newInstance();
+            ObjectMapper mapper = isXml ? xmlMapper : jsonMapper;
+            return mapper.readValue(file, mapper.getTypeFactory()
+                    .constructCollectionType(List.class, clazz));
+        } catch (IOException e) {
+            throw new ParserException("Failed to parse file", e);
+        }
+    }
 
-            for (Field field : clazz.getDeclaredFields()) {
-                FieldMapping annotation = field.getAnnotation(FieldMapping.class);
+    /**
+     * Maps a data source (e.g CSV record) to an object using a value extractor.
+     *
+     * @param data The data source (e.g., CSVRecord).
+     * @param clazz The target class.
+     * @param valueExtractor A function to extract values from the data source.
+     * @return A mapped object.
+     * @throws ParserException if mapping fails
+     */
+    public <T, D> T mapToObject(D data, Class<T> clazz, BiFunction<D, String, String> valueExtractor) throws ParserException {
+        try {
+            T obj = createInstance(clazz);
 
-                if (annotation != null) {
-                    String column = annotation.column();
-                    String value = valueExtractor.apply(data, column);
-                    if (value == null || value.isEmpty()) continue;
+            for (FieldInfo fieldInfo : getFieldInfo(clazz)) {
+                String column = fieldInfo.column();
+                String value = valueExtractor.apply(data, column);
 
-                    field.setAccessible(true);
-                    setFieldValue(field, obj, value);
+                if (value != null && !value.isEmpty()) {
+                    setFieldValue(fieldInfo.field(), obj, value, column);
                 }
             }
             return obj;
@@ -30,7 +83,10 @@ public class Mapper {
         }
     }
 
-    private void setFieldValue(Field field, Object target, String value) {
+    /**
+     * sets the value of a field on the target object.
+     */
+    private void setFieldValue(Field field, Object target, String value, String fullPath) {
         Class<?> type = field.getType();
         try {
             if (type == String.class) {
@@ -41,11 +97,108 @@ public class Mapper {
                 field.set(target, Double.parseDouble(value));
             } else if (type == boolean.class || type == Boolean.class) {
                 field.set(target, Boolean.parseBoolean(value));
+            } else if (type == long.class || type == Long.class) {
+                field.set(target, Long.parseLong(value));
+            } else if (type == LocalDate.class) {
+                field.set(target, LocalDate.parse(value));
+            } else if (type.isEnum()) {
+                field.set(target, Enum.valueOf((Class<Enum>) type, value));
+            } else {
+                String[] pathParts = fullPath.split("\\.");
+                String nestedFieldName = pathParts[0];
+
+                for (String path : pathParts) {
+                    System.out.println("Path Parts: " + path);
+                }
+
+                Field nestedField = target.getClass().getDeclaredField(nestedFieldName);
+                nestedField.setAccessible(true);
+
+                Object nestedObj = nestedField.get(target);
+                if (nestedObj == null) {
+                    nestedObj = createInstance(nestedField.getType());
+                    nestedField.set(target, nestedObj);
+                }
+
+                String remainingPath = String.join(".", Arrays.copyOfRange(pathParts, 1, pathParts.length));
+                setFieldValue(nestedField, nestedObj, value, remainingPath);
+
             }
         } catch (IllegalAccessException ex) {
             throw new ParserException("Error setting field value", ex);
         } catch (NumberFormatException nfe) {
             throw new ParserException("Invalid numeric format for field: " + field.getName(), nfe);
+        } catch (Exception ex) {
+            throw new ParserException("Failed to create nested object", ex);
+        }
+    }
+
+    private List<FieldInfo> getFieldInfo(Class<?> clazz) {
+        return fieldCache.computeIfAbsent(clazz, k -> {
+            List<FieldInfo> fieldInfo = new ArrayList<>();
+            for (Field field : clazz.getDeclaredFields()) {
+                FieldMapping annotation = field.getAnnotation(FieldMapping.class);
+                if (annotation != null) {
+                    field.setAccessible(true);
+                    fieldInfo.add(new FieldInfo(field, annotation.column()));
+                }
+            }
+            return fieldInfo;
+        });
+    }
+
+
+    /**
+     * creates an instance of the target class using a no-arg constructor or @JsonCreator
+     */
+    private <T> T createInstance(Class<T> clazz) throws Exception {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException ex) {
+            for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+                if (constructor.getAnnotation(JsonCreator.class) != null) {
+                    return (T) constructor.newInstance();
+                }
+            }
+            throw new ParserException("No suitable constructor found for class: " + clazz.getName());
+        }
+    }
+
+    private ObjectMapper createConfiguredObjectMapper(ObjectMapper mapper) {
+        return mapper.registerModules(new JavaTimeModule(), new SimpleModule())
+                .setAnnotationIntrospector(new FieldMappingAnnotationIntrospector())
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    /**
+     * Custom annotation introspector for FieldMapping.
+     */
+    private static class FieldMappingAnnotationIntrospector extends JacksonAnnotationIntrospector {
+        @Override
+        public PropertyName findNameForSerialization(Annotated annotated) {
+            FieldMapping annotation = annotated.getAnnotation(FieldMapping.class);
+            return annotation != null
+                    ? PropertyName.construct(annotation.column())
+                    : super.findNameForSerialization(annotated);
+        }
+
+        @Override
+        public PropertyName findNameForDeserialization(Annotated annotated) {
+            FieldMapping ann = annotated.getAnnotation(FieldMapping.class);
+            return ann != null
+                    ? PropertyName.construct(ann.column())
+                    : super.findNameForDeserialization(annotated);
+        }
+    }
+
+    /**
+     * Inner class to hold field information.
+     */
+    private record FieldInfo(Field field, String column) {
+        private FieldInfo(Field field, String column) {
+            this.field = field;
+            this.column = column.toLowerCase();
         }
     }
 }
