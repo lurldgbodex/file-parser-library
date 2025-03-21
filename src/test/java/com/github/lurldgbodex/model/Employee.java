@@ -1,5 +1,7 @@
 package com.github.lurldgbodex.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.lurldgbodex.annotations.FieldMapping;
 
 import java.time.LocalDate;
@@ -26,7 +28,22 @@ public class Employee {
     @FieldMapping(column = "address")
     private Address address;
 
-    public Employee(){}
+    private String id;
+    private int code;
+    private double su;
+    private char stat;
+    private boolean isFired;
+
+    @JsonCreator
+    public Employee(@JsonProperty("id") String id,
+                    @JsonProperty("su") double su, @JsonProperty("code") int code,
+                    @JsonProperty("stat") char stat, @JsonProperty("isFired") boolean isFired) {
+        this.id = id;
+        this.su = su;
+        this.code = code;
+        this.stat = stat;
+        this.isFired = isFired;
+    }
 
     public String getName() {
         return name;
@@ -54,6 +71,26 @@ public class Employee {
 
     public boolean isEmployed() {
         return employed;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public double getSu() {
+        return su;
+    }
+
+    public boolean getIsFired() {
+        return isFired;
+    }
+
+    public char getStat() {
+        return stat;
     }
 
     public void setEmployed(boolean employed) {
