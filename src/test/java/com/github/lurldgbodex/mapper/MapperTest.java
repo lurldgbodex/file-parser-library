@@ -1,12 +1,10 @@
 package com.github.lurldgbodex.mapper;
 
 import com.github.lurldgbodex.exceptions.ParserException;
-import com.github.lurldgbodex.model.Address;
 import com.github.lurldgbodex.model.Department;
 import com.github.lurldgbodex.model.Employee;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -112,6 +110,19 @@ class MapperTest {
     @Nested
     class EdgeCaseTests {
         @Test
+        void mapObjectWithCustomConstructor_createInstanceSuccessfully() {
+            CSVRecord mockRecord = mock(CSVRecord.class);
+
+            Employee result = mapper.mapToObject(
+                    mockRecord, Employee.class, CSVRecord::get);
+
+            assertNull(result.getId());
+            assertEquals(result.getSu(), 0.0);
+            assertEquals(result.getCode(), 0);
+            assertEquals(result.getStat(), '\u0000');
+            assertFalse(result.getIsFired());
+        }
+        @Test
         void mapInvalidNumericValue_ThrowsParserException() {
             CSVRecord mockRecord = mock(CSVRecord.class);
             when(mockRecord.get("years")).thenReturn("thirty");
@@ -141,17 +152,11 @@ class MapperTest {
         }
 
         @Test
-        @Disabled
         void mapNestedObjects_CreatesNestedStructure() {
             CSVRecord mockRecord = mock(CSVRecord.class);
 
             when(mockRecord.get("address.city")).thenReturn("New York");
             when(mockRecord.get("address.zip")).thenReturn("10001");
-
-            Employee employee = new Employee();
-            employee.setAddress(new Address());
-
-            when(mapper.mapToObject(mockRecord, Employee.class, CSVRecord::get)).thenReturn(employee);
 
             Employee result = mapper.mapToObject(
                     mockRecord, Employee.class, CSVRecord::get);
