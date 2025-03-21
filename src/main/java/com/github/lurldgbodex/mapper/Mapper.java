@@ -75,6 +75,10 @@ public class Mapper {
 
                 if (value != null && !value.isEmpty()) {
                     setFieldValue(fieldInfo.field(), obj, value, column);
+                } else if (isNestedObject(fieldInfo.field())) {
+                    Object nestedObj = mapToObject(data, fieldInfo.field().getType(),
+                            (d, subColumn) -> valueExtractor.apply(d, column + "." + subColumn));
+                    fieldInfo.field().set(obj, nestedObj);
                 }
             }
             return obj;
@@ -111,17 +115,22 @@ public class Mapper {
                     System.out.println("Path Parts: " + path);
                 }
 
-                Field nestedField = target.getClass().getDeclaredField(nestedFieldName);
+                Field nestedField = field.getType().getDeclaredField(nestedFieldName);
                 nestedField.setAccessible(true);
 
-                Object nestedObj = nestedField.get(target);
+                Object nestedObj = field.get(target);
                 if (nestedObj == null) {
                     nestedObj = createInstance(nestedField.getType());
-                    nestedField.set(target, nestedObj);
+                    field.set(target, nestedObj);
                 }
 
                 String remainingPath = String.join(".", Arrays.copyOfRange(pathParts, 1, pathParts.length));
-                setFieldValue(nestedField, nestedObj, value, remainingPath);
+
+                if (!remainingPath.isEmpty()) {
+                    Field actualNestedField = nestedObj.getClass().getDeclaredField(remainingPath);
+                    actualNestedField.setAccessible(true);
+                    setFieldValue(actualNestedField, nestedObj, value, remainingPath);
+                }
 
             }
         } catch (IllegalAccessException ex) {
@@ -133,15 +142,24 @@ public class Mapper {
         }
     }
 
+    private boolean isNestedObject(Field field) {
+        Class<?> type = field.getType();
+        return !type.isPrimitive() && !type.equals(String.class) && !type.equals(Integer.class) &&
+                !type.equals(Double.class) && !type.equals(Boolean.class) && !type.equals(Long.class) &&
+                !type.equals(LocalDate.class) && !type.isEnum();
+    }
+
     private List<FieldInfo> getFieldInfo(Class<?> clazz) {
         return fieldCache.computeIfAbsent(clazz, k -> {
             List<FieldInfo> fieldInfo = new ArrayList<>();
+
             for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+
                 FieldMapping annotation = field.getAnnotation(FieldMapping.class);
-                if (annotation != null) {
-                    field.setAccessible(true);
-                    fieldInfo.add(new FieldInfo(field, annotation.column()));
-                }
+                String columnName = (annotation != null) ? annotation.column() : field.getName();
+
+                fieldInfo.add(new FieldInfo(field, columnName.toLowerCase()));
             }
             return fieldInfo;
         });
@@ -156,12 +174,34 @@ public class Mapper {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException ex) {
             for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-                if (constructor.getAnnotation(JsonCreator.class) != null) {
-                    return (T) constructor.newInstance();
+                if (constructor.isAnnotationPresent(JsonCreator.class)) {
+                    constructor.setAccessible(true);
+
+                    Class<?>[] paramTypes = constructor.getParameterTypes();
+                    Object[] defaultArgs = new Object[paramTypes.length];
+
+                    for (int i = 0; i < paramTypes.length; i++) {
+                        defaultArgs[i] = getDefaultValue(paramTypes[i]);
+                    }
+
+                    Object instance = constructor.newInstance(defaultArgs);
+                    return clazz.cast(instance);
                 }
             }
             throw new ParserException("No suitable constructor found for class: " + clazz.getName());
         }
+    }
+
+    private Object getDefaultValue(Class<?> clazz) {
+        if (clazz.isPrimitive()) {
+            if (clazz == boolean.class) return false;
+            if (clazz == char.class) return '\u0000';
+            if (clazz == byte.class || clazz == short.class
+                    || clazz == int.class || clazz == long.class) return 0;
+            if (clazz == float.class || clazz == double.class) return 0.0;
+        }
+
+        return null;
     }
 
     private ObjectMapper createConfiguredObjectMapper(ObjectMapper mapper) {
