@@ -8,7 +8,6 @@ import com.github.lurldgbodex.parsers.CsvParser;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 public class CsvToJsonConverter implements Converter {
     private final CsvParser csvParser;
@@ -21,22 +20,12 @@ public class CsvToJsonConverter implements Converter {
 
 
     @Override
-    public void convert(File input, File output) throws ConverterException {
-        try {
-            List<Map<String, String>> data = csvParser.parseToMaps(input);
-            jsonMapper.writeValue(output, data);
-        } catch (Exception ex) {
-            throw new ConverterException("CSV to JSON conversion failed", ex);
-        }
-    }
-
-    @Override
     public <T> void convert(File input, File output, Class<T> clazz) throws ConverterException {
         try {
             List<T> data = csvParser.parseToObject(input, clazz);
             jsonMapper.writeValue(output, data);
         } catch (Exception ex) {
-            throw new ConverterException("CSV to JSON (POJO) conversion failed", ex);
+            throw new ConverterException("CSV to JSON conversion failed", ex);
         }
     }
 }
