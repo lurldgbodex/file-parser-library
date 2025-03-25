@@ -106,7 +106,12 @@ public class Mapper {
             } else if (type == LocalDate.class) {
                 field.set(target, LocalDate.parse(value));
             } else if (type.isEnum()) {
-                field.set(target, Enum.valueOf((Class<Enum>) type, value));
+                Object enumValue = Arrays.stream(type.getEnumConstants())
+                        .map(e -> (Enum<?>) e)
+                        .filter(e -> e.name().equalsIgnoreCase(value))
+                        .findFirst().orElseThrow(() -> new IllegalArgumentException("Invalid enum value: " + value));
+
+                field.set(target, enumValue);
             } else {
                 String[] pathParts = fullPath.split("\\.");
                 String nestedFieldName = pathParts[0];
