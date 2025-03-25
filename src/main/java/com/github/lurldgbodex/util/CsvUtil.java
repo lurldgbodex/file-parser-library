@@ -13,8 +13,8 @@ import java.util.List;
 public class CsvUtil {
 
     public static <T> void convertToCsv(List<T> data, File output) throws IOException {
-        try (FileWriter writer = new FileWriter(output);
-             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(getHeaders(data.get(0))))) {
+        try (FileWriter writer = new FileWriter(output); CSVPrinter csvPrinter = new CSVPrinter(
+                writer, CSVFormat.RFC4180.builder().setHeader(getHeaders(data.get(0))).get())) {
 
             for (T obj : data) {
                 csvPrinter.printRecord(getValues(obj));
