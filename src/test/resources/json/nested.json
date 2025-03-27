@@ -1,0 +1,26 @@
+[
+  {
+    "full_name": "john doe",
+    "years": 20,
+    "salary": 1020.50,
+    "active": true,
+    "start_date": "2014-11-12",
+    "department": "HR",
+    "address": {
+      "city": "Lagos",
+      "zip": "102022"
+    }
+  },
+  {
+    "full_name": "jane doe",
+    "years": 18,
+    "salary": 800.50,
+    "active": false,
+    "start_date": "2019-11-12",
+    "department": "Marketing",
+    "address": {
+      "city": "Abuja",
+      "zip": "102021"
+    }
+  }
+]
