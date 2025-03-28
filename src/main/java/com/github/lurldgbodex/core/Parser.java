@@ -6,7 +6,6 @@ import com.github.lurldgbodex.exceptions.ParserException;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 public interface Parser {
     /**
@@ -18,27 +17,6 @@ public interface Parser {
      * @throws ParserException if file parsing fails
      */
     <T> List<T> parseToObject(File file, Class<T> clazz) throws ParserException;
-
-
-    /**
-     * Parses a file to a list of map
-     *
-     * @param file The file to parse
-     * @return A list of map
-     * @throws ParserException if parsing fails
-     */
-    List<Map<String, Object>> parseToMaps(File file) throws ParserException;
-
-
-    /**
-     * Converts a file from one format to another format
-     *
-     * @param inputFile The file to convert
-     * @param outputFormat The format to convert to
-     * @param outputFile The converted file
-     * @throws ConverterException if file conversion fails
-     */
-    void convert(File inputFile, Format outputFormat, File outputFile) throws ConverterException;
 
 
     /**
