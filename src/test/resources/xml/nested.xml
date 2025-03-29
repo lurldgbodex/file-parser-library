@@ -3,13 +3,10 @@
         <full_name>John Doe</full_name>
         <years>30</years>
         <salary>89500</salary>
-        <activ>true</activ>
-        <start_dat>2022-05-15</start_dat>
+        <active>true</active>
+        <start_date>2022-05-15</start_date>
 
-        <department>
-            <name>Engineering</name>
-            <code>ENG-001</code>
-        </department>
+        <department>Engineering</department>
 
         <address>
             <street>123 Main St</street>
