@@ -2,11 +2,10 @@ package com.github.lurldgbodex.mapper;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyName;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -18,10 +17,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
@@ -32,8 +28,25 @@ public class Mapper {
     private static final Map<Class<?>, List<FieldInfo>> fieldCache = new ConcurrentHashMap<>();
 
     public Mapper() {
-        this.jsonMapper = createConfiguredObjectMapper(new ObjectMapper());
-        this.xmlMapper = (XmlMapper) createConfiguredObjectMapper(new XmlMapper());
+        this.jsonMapper = JsonMapper.builder()
+                .addModules(new JavaTimeModule(), new SimpleModule())
+                .annotationIntrospector(new FieldMappingAnnotationIntrospector())
+                .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .serializationInclusion(JsonInclude.Include.NON_NULL)
+                .build();
+
+        this.xmlMapper = XmlMapper.builder()
+                .addModules(new JavaTimeModule(), new SimpleModule())
+                .annotationIntrospector(new FieldMappingAnnotationIntrospector())
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
+                .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                .disable(SerializationFeature.WRAP_ROOT_VALUE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .serializationInclusion(JsonInclude.Include.NON_NULL)
+                .build();
     }
 
 
@@ -49,8 +62,16 @@ public class Mapper {
     public <T> List<T> mapToObject(File file, Class<T> clazz, boolean isXml) throws ParserException {
         try {
             ObjectMapper mapper = isXml ? xmlMapper : jsonMapper;
+            JsonNode rootNode = mapper.readTree(file);
+
+            if (!isXml && !rootNode.isArray()) {
+                T singleObject = mapper.treeToValue(rootNode, clazz);
+                return Collections.singletonList(singleObject);
+            }
+
             return mapper.readValue(file, mapper.getTypeFactory()
                     .constructCollectionType(List.class, clazz));
+
         } catch (IOException e) {
             throw new ParserException("Failed to parse file", e);
         }
@@ -209,12 +230,6 @@ public class Mapper {
         return null;
     }
 
-    private ObjectMapper createConfiguredObjectMapper(ObjectMapper mapper) {
-        return mapper.registerModules(new JavaTimeModule(), new SimpleModule())
-                .setAnnotationIntrospector(new FieldMappingAnnotationIntrospector())
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    }
 
     /**
      * Custom annotation introspector for FieldMapping.
