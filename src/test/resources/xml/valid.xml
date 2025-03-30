@@ -1,6 +1,8 @@
-<user>
-    <name>John Doe</name>
-    <age>30</age>
-    <email>john@doe.com</email>
-    <active>true</active>
-</user>
+<users>
+    <user>
+        <name>John Doe</name>
+        <age>30</age>
+        <email>john@doe.com</email>
+        <active>true</active>
+    </user>
+</users>

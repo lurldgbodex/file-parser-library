@@ -4,9 +4,9 @@ import com.github.lurldgbodex.core.Parser;
 import com.github.lurldgbodex.exceptions.ParserException;
 import com.github.lurldgbodex.model.Department;
 import com.github.lurldgbodex.model.Employee;
+import com.github.lurldgbodex.model.Person;
 import com.github.lurldgbodex.model.User;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -69,15 +69,51 @@ public class JsonParserTest {
         }
 
         @Test
-        @Disabled("unimplemented")
-        void testParseObject_validation_failure() {}
+        void testParseObject_validation_failure() {
+            File jsonFile = new File(TEST_RESOURCES + "invalid-name.json");
+            File jsonFile2 = new File(TEST_RESOURCES + "invalid-email.json");
+            File jsonFile3 = new File(TEST_RESOURCES + "missing-name.json");
+
+            assertThrows(ParserException.class,
+                    () -> jsonParser.parseToObject(jsonFile, Person.class));
+            assertThrows(ParserException.class,
+                    () -> jsonParser.parseToObject(jsonFile2, Person.class));
+            assertThrows(ParserException.class,
+                    () -> jsonParser.parseToObject(jsonFile3, Person.class));
+        }
 
         @Test
-        @Disabled("Unimplemented")
-        void testParseObject_incompatibleClass_invalidated() {}
+        void testParseObject_incompatibleClass_invalidated() {
+            File jsonFile = new File(TEST_RESOURCES + "missing-name.json");
+            List<User> result = jsonParser.parseToObject(jsonFile, User.class);
+
+            assertAll("Default User props",
+                    () -> assertNull(result.get(0).getName()),
+                    () -> assertNull(result.get(0).getEmail()),
+                    () -> assertFalse(result.get(0).isActive())
+            );
+        }
 
         @Test
-        @Disabled("Unimplemented")
-        void testParseObject_incompatibleClass_validated() {}
+        void testParseObject_incompatibleClass_validated() {
+            File jsonFile = new File(TEST_RESOURCES + "nested.json");
+
+            assertThrows(ParserException.class,
+                    () -> jsonParser.parseToObject(jsonFile, Person.class));
+        }
+
+        @Test
+        void testParseObject_validation_passed() {
+            File jsonFile = new File(TEST_RESOURCES + "validated.json");
+
+            List<Person> result = jsonParser.parseToObject(jsonFile, Person.class);
+
+            assertAll("Person Properties",
+                    () -> assertEquals(1, result.size()),
+                    () -> assertEquals(1, result.get(0).getId()),
+                    () -> assertEquals(0, result.get(0).getAge()),
+                    () -> assertEquals("Michael Jordan", result.get(0).getFullName())
+            );
+        }
     }
 }
