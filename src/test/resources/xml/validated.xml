@@ -1,0 +1,9 @@
+<Persons>
+    <person>
+        <id>1</id>
+        <name>Michael Jordan</name>
+        <email>michael@jordan.com</email>
+        <sex>male</sex>
+        <single>false</single>
+    </person>
+</Persons>

@@ -3,9 +3,9 @@ package com.github.lurldgbodex.parsers;
 import com.github.lurldgbodex.exceptions.ParserException;
 import com.github.lurldgbodex.model.Department;
 import com.github.lurldgbodex.model.Employee;
+import com.github.lurldgbodex.model.Person;
 import com.github.lurldgbodex.model.User;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -69,15 +69,51 @@ public class XmlParserTest {
         }
 
         @Test
-        @Disabled("Unimplemented")
-        void testParseObject_validation_failure() {}
+        void testParseObject_validation_failure() {
+            File xmlFile = new File(TEST_RESOURCES + "invalid-name.xml");
+            File XmlFile2 = new File(TEST_RESOURCES + "invalid-email.xml");
+            File xmlFile3 = new File(TEST_RESOURCES + "missing-name.xml");
+
+            assertThrows(ParserException.class,
+                    () -> parser.parseToObject(xmlFile, Person.class));
+            assertThrows(ParserException.class,
+                    () -> parser.parseToObject(XmlFile2, Person.class));
+            assertThrows(ParserException.class,
+                    () -> parser.parseToObject(xmlFile3, Person.class));
+        }
 
         @Test
-        @Disabled("Unimplemented")
-        void testParseObject_incompatibleClass_invalidated() {}
+        void testParseObject_incompatibleClass_invalidated() {
+            File xmlFile = new File(TEST_RESOURCES + "missing-name.xml");
+            List<User> result = parser.parseToObject(xmlFile, User.class);
+
+            assertAll("Default User props",
+                    () -> assertNull(result.get(0).getName()),
+                    () -> assertNull(result.get(0).getEmail()),
+                    () -> assertFalse(result.get(0).isActive())
+            );
+        }
 
         @Test
-        @Disabled("Unimplemented")
-        void testParseObject_incompatibleClass_validated() {}
+        void testParseObject_incompatibleClass_validated() {
+            File xmlFile = new File(TEST_RESOURCES + "nested.xml");
+
+            assertThrows(ParserException.class,
+                    () -> parser.parseToObject(xmlFile, Person.class));
+        }
+
+        @Test
+        void testParsedObject_validation_passed() {
+            File file = new File(TEST_RESOURCES + "validated.xml");
+
+            List<Person> result = parser.parseToObject(file, Person.class);
+
+            assertAll("Person Properties",
+                    () -> assertEquals(1, result.size()),
+                    () -> assertEquals(1, result.get(0).getId()),
+                    () -> assertEquals(0, result.get(0).getAge()),
+                    () -> assertEquals("Michael Jordan", result.get(0).getFullName())
+            );
+        }
     }
 }
