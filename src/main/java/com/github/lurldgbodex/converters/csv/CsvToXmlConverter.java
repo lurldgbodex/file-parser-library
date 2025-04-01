@@ -5,19 +5,18 @@ import com.github.lurldgbodex.core.Converter;
 import com.github.lurldgbodex.core.Parser;
 import com.github.lurldgbodex.enums.Format;
 import com.github.lurldgbodex.exceptions.ConverterException;
-import com.github.lurldgbodex.util.JsonUtil;
+import com.github.lurldgbodex.util.XmlUtil;
 
 import java.io.File;
 import java.util.List;
 
-public class CsvToJsonConverter implements Converter {
+public class CsvToXmlConverter implements Converter {
 
-    private final JsonUtil jsonUtil;
+    private final XmlUtil xmlUtil;
 
-    public CsvToJsonConverter() {
-        this.jsonUtil = new JsonUtil();
+    public CsvToXmlConverter() {
+        this.xmlUtil = new XmlUtil();
     }
-
 
     @Override
     public Format getSourceFormat() {
@@ -26,17 +25,17 @@ public class CsvToJsonConverter implements Converter {
 
     @Override
     public Format getTargetFormat() {
-        return Format.JSON;
+        return Format.XML;
     }
 
     @Override
     public <T> void convert(File input, File output, Class<T> clazz) throws ConverterException {
-        try {
+        try{
             Parser parser = ParserFactory.getParser(getSourceFormat());
             List<T> data = parser.parseToObject(input, clazz);
-            jsonUtil.convertToJson(data, output);
+            xmlUtil.convertToXml(data, output);
         } catch (Exception ex) {
-            throw new ConverterException("CSV to JSON conversion failed", ex);
+            throw new ConverterException("Failed to converted csv to xml", ex);
         }
     }
 }

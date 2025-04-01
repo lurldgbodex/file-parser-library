@@ -1,32 +1,31 @@
-package com.github.lurldgbodex.converters.csv;
+package com.github.lurldgbodex.converters.json;
 
 import com.github.lurldgbodex.factory.ParserFactory;
 import com.github.lurldgbodex.core.Converter;
 import com.github.lurldgbodex.core.Parser;
 import com.github.lurldgbodex.enums.Format;
 import com.github.lurldgbodex.exceptions.ConverterException;
-import com.github.lurldgbodex.util.JsonUtil;
+import com.github.lurldgbodex.util.XmlUtil;
 
 import java.io.File;
 import java.util.List;
 
-public class CsvToJsonConverter implements Converter {
+public class JsonToXmlConverter implements Converter {
 
-    private final JsonUtil jsonUtil;
+    private final XmlUtil xmlUtil;
 
-    public CsvToJsonConverter() {
-        this.jsonUtil = new JsonUtil();
+    public JsonToXmlConverter() {
+        this.xmlUtil = new XmlUtil();
     }
-
 
     @Override
     public Format getSourceFormat() {
-        return Format.CSV;
+        return Format.JSON;
     }
 
     @Override
     public Format getTargetFormat() {
-        return Format.JSON;
+        return Format.XML;
     }
 
     @Override
@@ -34,9 +33,9 @@ public class CsvToJsonConverter implements Converter {
         try {
             Parser parser = ParserFactory.getParser(getSourceFormat());
             List<T> data = parser.parseToObject(input, clazz);
-            jsonUtil.convertToJson(data, output);
+            xmlUtil.convertToXml(data, output);
         } catch (Exception ex) {
-            throw new ConverterException("CSV to JSON conversion failed", ex);
+            throw new ConverterException("Failed to convert Json to Xml", ex);
         }
     }
 }
