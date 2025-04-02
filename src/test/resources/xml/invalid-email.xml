@@ -1,0 +1,10 @@
+<Persons>
+    <Person>
+        <id>1</id>
+        <name>Michael Jordan</name>
+        <email>invalid</email>
+        <age>58</age>
+        <sex>Male</sex>
+        <single>false</single>
+    </Person>
+</Persons>

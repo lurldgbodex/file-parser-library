@@ -1,0 +1,8 @@
+{
+  "id": 1,
+  "name": "Michael Jordan",
+  "email": "invalid",
+  "age": 58,
+  "sex": "male",
+  "single": false
+}

@@ -1,0 +1,2 @@
+id,full_name,years,salary,active,start_date,department,address.city,address.zip
+1,john doe,45,200,true,"2022-01-29","engineering","New York","10001"

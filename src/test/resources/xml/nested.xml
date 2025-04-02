@@ -1,0 +1,36 @@
+<employees>
+    <employee>
+        <full_name>John Doe</full_name>
+        <years>30</years>
+        <salary>89500</salary>
+        <active>true</active>
+        <start_date>2022-05-15</start_date>
+
+        <department>Engineering</department>
+
+        <address>
+            <street>123 Main St</street>
+            <city>New York</city>
+            <zip>10001</zip>
+        </address>
+    </employee>
+
+    <employee>
+        <full_name>Jane Doe</full_name>
+        <years>28</years>
+        <salary>49500</salary>
+        <activ>false</activ>
+        <start_dat>2021-08-09</start_dat>
+
+        <department>
+            <name>Marketing</name>
+            <code>MKT-002</code>
+        </department>
+
+        <address>
+            <street>456 Oak St</street>
+            <city>Los Angeles</city>
+            <zip>90001</zip>
+        </address>
+    </employee>
+</employees>
